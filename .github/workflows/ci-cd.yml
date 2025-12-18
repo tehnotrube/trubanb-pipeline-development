@@ -46,6 +46,11 @@ jobs:
       new_release_version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # CRITICAL: Fetch all history and tags so semantic-release 
+          # can see that .1 already exists and increment to .2
+          fetch-depth: 0
+        
       - name: Semantic Release
         id: semantic
         uses: cycjimmy/semantic-release-action@v6
