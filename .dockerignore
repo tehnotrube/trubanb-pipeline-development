@@ -1,0 +1,20 @@
+# Dependencies & Build artifacts
+node_modules
+dist
+npm-debug.log
+
+# Secrets and Config
+.env
+.env.*
+!.env.example
+
+# Git & Metadata
+.git
+.gitignore
+.dockerignore
+.vscode
+README.md
+
+# Testing
+coverage
+test
