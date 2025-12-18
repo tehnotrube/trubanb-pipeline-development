@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main, 'feature/*']
+  push:
+    branches: [develop]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:cov
+
+      - name: Build pre-release Docker image (develop)
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          VERSION=$(npx semantic-release --dry-run | grep "The next release version is" | awk '{print $6}')
+          echo "Next pre-release version: $VERSION"
+          docker build -t ghcr.io/${{ github.repository_owner }}/accommodation-service:$VERSION .
+          docker tag ghcr.io/${{ github.repository_owner }}/accommodation-service:$VERSION ghcr.io/${{ github.repository_owner }}/accommodation-service:develop
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push ghcr.io/${{ github.repository_owner }}/accommodation-service:$VERSION
+          docker push ghcr.io/${{ github.repository_owner }}/accommodation-service:develop
+
+      - name: Optional Build Docker image for feature branches
+        if: startsWith(github.ref, 'refs/heads/feature/')
+        run: |
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '-')
+          VERSION=$(npx semantic-release --dry-run | grep "The next release version is" | awk '{print $6}')-$BRANCH
+          echo "Feature branch pre-release version: $VERSION"
+          docker build -t ghcr.io/${{ github.repository_owner }}/accommodation-service:$VERSION .
+          docker push ghcr.io/${{ github.repository_owner }}/accommodation-service:$VERSION
